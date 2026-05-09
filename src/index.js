@@ -8,14 +8,19 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 const corsOptions = {
-  origin: ['https://community-music-fe.vercel.app', 'http://localhost:5173', 'http://localhost:3000'],
+  origin: true, // Allow all origins in production
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Handle CORS preflight
+app.options('*', (req, res) => {
+  res.sendStatus(200);
+});
 
 // Health check endpoint for Railway
 app.get('/', (req, res) => {
