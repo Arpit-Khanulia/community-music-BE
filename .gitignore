@@ -3,5 +3,6 @@ node_modules/
 .env.local
 .env.*
 downloads/
+cookies/
 *.log
 .DS_Store

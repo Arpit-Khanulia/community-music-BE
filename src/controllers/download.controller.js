@@ -15,7 +15,7 @@ const downloads = new Map();
 
 async function getVideoInfo(url) {
   return new Promise((resolve) => {
-    const args = ['--js-runtimes', 'node:/home/firedragon/.nvm/versions/node/v24.11.1/bin/node', '--cookies-from-browser', 'firefox', '--dump-json', '--no-download', url];
+    const args = ['--js-runtimes', 'node:/home/firedragon/.nvm/versions/node/v24.11.1/bin/node', '--cookies', path.join(__dirname, '../../cookies/youtube.txt'), '--dump-json', '--no-download', url];
     const process = spawn('yt-dlp', args);
     let output = '';
 
@@ -73,7 +73,7 @@ export const downloadController = {
 
     const args = [
       '--js-runtimes', 'node:/home/firedragon/.nvm/versions/node/v24.11.1/bin/node',
-      '--cookies-from-browser', 'firefox',
+      '--cookies', path.join(__dirname, '../../cookies/youtube.txt'),
       '-f', 'bestaudio',
       '--extract-audio',
       '--audio-format', format,
