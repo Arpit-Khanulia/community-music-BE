@@ -13,9 +13,55 @@ if (!fs.existsSync(DOWNLOADS_DIR)) {
 
 const downloads = new Map();
 
-async function getVideoInfo(url) {
+const BROWSERS = ['brave', 'chrome', 'firefox', 'edge', 'chromium', 'opera'];
+
+let availableBrowser = null;
+
+async function detectAvailableBrowser() {
+  for (const browser of BROWSERS) {
+    try {
+      const testProcess = spawn('yt-dlp', ['--cookies-from-browser', browser, '--dump-json', '--no-download', 'https://www.youtube.com']);
+      await new Promise((resolve) => {
+        testProcess.on('close', () => resolve());
+        testProcess.on('error', () => resolve());
+        setTimeout(() => { testProcess.kill(); resolve(); }, 3000);
+      });
+      availableBrowser = browser;
+      console.log(`Using browser for cookies: ${browser}`);
+      return browser;
+    } catch {
+      continue;
+    }
+  }
+  console.log('No browser found for cookies, proceeding without authentication');
+  return null;
+}
+
+detectAvailableBrowser();
+
+async function tryGetCookiesFromBrowser() {
+  for (const browser of BROWSERS) {
+    try {
+      const testArgs = ['--cookies-from-browser', browser, '--dump-json', '--no-download', 'https://www.youtube.com'];
+      const testProcess = spawn('yt-dlp', testArgs, { timeout: 5000 });
+      await new Promise((resolve) => {
+        testProcess.on('close', () => resolve());
+        testProcess.on('error', () => resolve());
+        setTimeout(() => { testProcess.kill(); resolve(); }, 5000);
+      });
+      return browser;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+async function getVideoInfo(url, cookiesBrowser = null) {
   return new Promise((resolve) => {
-    const args = ['--js-runtimes', 'node:/home/firedragon/.nvm/versions/node/v24.11.1/bin/node', '--cookies', path.join(__dirname, '../../cookies/youtube.txt'), '--dump-json', '--no-download', url];
+    const args = cookiesBrowser
+      ? ['--cookies-from-browser', cookiesBrowser, '--dump-json', '--no-download', url]
+      : ['--dump-json', '--no-download', url];
     const process = spawn('yt-dlp', args);
     let output = '';
 
@@ -53,7 +99,7 @@ export const downloadController = {
     const id = uuidv4();
     const outputPath = path.join(DOWNLOADS_DIR, `${id}.%(ext)s`);
 
-    const videoInfo = await getVideoInfo(url);
+    const videoInfo = await getVideoInfo(url, availableBrowser);
 
     const downloadInfo = {
       id,
@@ -71,9 +117,9 @@ export const downloadController = {
 
     downloads.set(id, downloadInfo);
 
+    const cookieArgs = availableBrowser ? ['--cookies-from-browser', availableBrowser] : [];
     const args = [
-      '--js-runtimes', 'node:/home/firedragon/.nvm/versions/node/v24.11.1/bin/node',
-      '--cookies', path.join(__dirname, '../../cookies/youtube.txt'),
+      ...cookieArgs,
       '-f', 'bestaudio',
       '--extract-audio',
       '--audio-format', format,
